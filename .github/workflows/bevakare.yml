@@ -11,6 +11,10 @@ on:
       minutes:
         description: "Hur många minuter körningen ska bevaka (kort värde = test)"
         default: "330"
+      test_notify:
+        description: "Skicka bara en testnotis (ntfy + WhatsApp)"
+        type: boolean
+        default: false
 
 concurrency:
   group: bevakare
@@ -37,7 +41,16 @@ jobs:
           key: state-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: state-
 
+      - name: Testnotis
+        if: ${{ inputs.test_notify }}
+        run: python bevakare.py --test-notify
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+
       - name: Bevaka lagret
+        if: ${{ !inputs.test_notify }}
         run: python bevakare.py --max-minutes ${{ inputs.minutes || 330 }} --quiet-start
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}

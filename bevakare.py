@@ -237,10 +237,17 @@ def main():
     ap.add_argument("--once", action="store_true", help="kör en kontroll och visa status, utan notiser")
     ap.add_argument("--max-minutes", type=float, help="avsluta efter så här många minuter (för GitHub Actions)")
     ap.add_argument("--quiet-start", action="store_true", help="skicka startnotis bara första gången (inget sparat tillstånd)")
+    ap.add_argument("--test-notify", action="store_true", help="skicka en testnotis via alla kanaler och avsluta")
     args = ap.parse_args()
 
     cfg = load_config()
     setup_logging(cfg)
+    if args.test_notify:
+        log.info("WhatsApp är %s", "konfigurerat" if cfg["whatsapp"].get("apikey") else "INTE konfigurerat")
+        notify(cfg, "Testmeddelande från TV-bevakaren",
+               f"Det här är ett test. När {cfg['product']['name']} finns i en Stockholmsbutik får du ett meddelande som det här.",
+               tags=["test_tube"], click=cfg["product"]["url"])
+        return
     state_path = BASE_DIR / cfg["files"]["state"]
     stop_at = datetime.strptime(cfg["schedule"]["stop_at"], "%Y-%m-%d %H:%M").replace(tzinfo=TZ)
     client = httpx.Client(timeout=30, headers={
