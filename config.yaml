@@ -1,0 +1,50 @@
+# Inställningar för lagerbevakaren. Ändra här och starta om bevakaren.
+
+product:
+  sku: "912307"
+  name: 'LG 65" C5 4K OLED evo TV (2025)'
+  url: "https://www.elgiganten.se/product/tv-ljud-smart-hem/tv-tillbehor/tv/lg-65-c5-4k-oled-evo-tv-2025/912307"
+
+ntfy:
+  server: "https://ntfy.sh"
+  topic: ""   # sätts i config.local.yaml (lokalt) eller som GitHub Secret NTFY_TOPIC
+
+# Butiker som räknas som "Stockholm". Nyckel = Elgigantens butiks-ID, värde = namn (bara för läsbarhet).
+# Hela butikslistan finns på https://www.elgiganten.se/store
+stores:
+  "2058": Elgiganten Gallerian
+  "2036": Elgiganten Kungsgatan
+  "2031": Elgiganten Sickla
+  "2023": Elgiganten Bromma
+  "2006": Elgiganten Kungens Kurva
+  "2047": Elgiganten Häggvik
+  "2019": Elgiganten Länna
+  "2038": Elgiganten Täby Arninge
+  "2001": Elgiganten Barkarby
+  "2249": Elgiganten Värmdö
+  "2017": Elgiganten Södertälje
+  "2246": Elgiganten Märsta
+  "2285": Elgiganten Nynäshamn
+  "2210": Elgiganten Norrtälje
+
+# Position och "min butik" som skickas med i anropet (centrala Stockholm / Gallerian).
+location:
+  store_id: "2058"
+  lat: 59.33258
+  lng: 18.05773
+
+schedule:
+  interval_seconds: 300   # var 5:e minut
+  jitter_seconds: 20      # ± slumpmässig variation
+  stop_at: "2026-10-18 23:59"   # svensk tid
+
+errors:
+  failures_before_alert: 3   # antal misslyckade kontroller i rad innan "bevakaren är trasig"-notis
+  retries: 2                 # extra försök vid nätverksfel inom samma kontroll
+  backoff_seconds: [15, 45]  # väntetid före varje extra försök
+
+files:
+  state: "state.json"
+  log: "bevakare.log"
+
+user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36"

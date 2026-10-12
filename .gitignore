@@ -1,0 +1,6 @@
+.venv/
+state.json
+*.log
+bevakare.out
+bevakare.pid
+config.local.yaml

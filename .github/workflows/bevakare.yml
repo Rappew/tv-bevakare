@@ -1,0 +1,46 @@
+# Kör lagerbevakaren i GitHubs moln. Varje körning kontrollerar var 5:e minut i 5,5 timmar.
+# Schemat startar en ny körning varje timme; "concurrency" ser till att bara en kör åt gången
+# och att nästa tar vid direkt när den förra är klar. Tillståndet (state.json) sparas mellan körningarna.
+name: Lagerbevakare
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bevakare
+  cancel-in-progress: false
+
+jobs:
+  bevaka:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Hämta sparat tillstånd
+        uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: state-
+
+      - name: Bevaka lagret
+        run: python bevakare.py --max-minutes 330 --quiet-start
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+
+      - name: Spara tillstånd
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}-${{ github.run_attempt }}
