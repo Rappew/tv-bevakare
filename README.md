@@ -10,7 +10,7 @@ Bevakaren kollar var 5:e minut (± 20 sek) om **LG 65" C5 4K OLED evo TV (2025)*
 
 ## Komma igång på mobilen
 
-Öppna ntfy-appen, tryck **+** och prenumerera på ämnet **`tv-bevakare-1f4f73c9`** (server: ntfy.sh).
+Öppna ntfy-appen, tryck **+** och prenumerera på ditt ämne (server: ntfy.sh). Ämnesnamnet står i `config.local.yaml` på Macen.
 
 ## Molnet (GitHub Actions) – så körs den nu
 
