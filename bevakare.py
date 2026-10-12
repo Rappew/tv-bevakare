@@ -39,12 +39,18 @@ def load_config():
         cfg = yaml.safe_load(f)
     # ntfy-ämnet hålls utanför GitHub: läses från miljövariabeln NTFY_TOPIC (GitHub Secret)
     # eller från den lokala filen config.local.yaml.
+    # Samma sak för WhatsApp (CallMeBot): telefonnummer och nyckel är hemliga.
     local = BASE_DIR / "config.local.yaml"
+    local_cfg = {}
     if local.exists():
         with open(local, encoding="utf-8") as f:
-            cfg["ntfy"].update((yaml.safe_load(f) or {}).get("ntfy", {}))
+            local_cfg = yaml.safe_load(f) or {}
+    cfg["ntfy"].update(local_cfg.get("ntfy", {}))
+    cfg["whatsapp"] = local_cfg.get("whatsapp", {})
     if os.environ.get("NTFY_TOPIC"):
         cfg["ntfy"]["topic"] = os.environ["NTFY_TOPIC"]
+    if os.environ.get("CALLMEBOT_PHONE") and os.environ.get("CALLMEBOT_APIKEY"):
+        cfg["whatsapp"] = {"phone": os.environ["CALLMEBOT_PHONE"], "apikey": os.environ["CALLMEBOT_APIKEY"]}
     if not cfg["ntfy"].get("topic"):
         sys.exit("Inget ntfy-ämne: sätt NTFY_TOPIC eller topic i config.local.yaml")
     cfg["stores"] = {str(k): v for k, v in cfg["stores"].items()}
@@ -60,9 +66,33 @@ def setup_logging(cfg):
         log.addHandler(handler)
 
 
-# ---------- ntfy ----------
+# ---------- notiser (ntfy + WhatsApp) ----------
 
 def notify(cfg, title, message, priority=3, tags=None, click=None):
+    sent_ntfy = notify_ntfy(cfg, title, message, priority, tags, click)
+    sent_wa = notify_whatsapp(cfg, title, message)
+    return sent_ntfy or sent_wa
+
+
+def notify_whatsapp(cfg, title, message):
+    wa = cfg.get("whatsapp") or {}
+    if not (wa.get("phone") and wa.get("apikey")):
+        return False
+    try:
+        r = httpx.get("https://api.callmebot.com/whatsapp.php", timeout=30,
+                      params={"phone": wa["phone"], "apikey": wa["apikey"], "text": f"*{title}*\n{message}"})
+        r.raise_for_status()
+        if "error" in r.text.lower()[:500] and "queued" not in r.text.lower():
+            raise ValueError("CallMeBot svarade med ett fel")
+        log.info("WhatsApp skickat: %s", title)
+        return True
+    except (httpx.HTTPError, ValueError) as e:
+        # Logga inte URL:en, den innehåller nummer och nyckel.
+        log.error("Kunde inte skicka WhatsApp (%s): %s", title, type(e).__name__)
+        return False
+
+
+def notify_ntfy(cfg, title, message, priority=3, tags=None, click=None):
     payload = {"topic": cfg["ntfy"]["topic"], "title": title, "message": message, "priority": priority}
     if tags:
         payload["tags"] = tags
@@ -71,7 +101,7 @@ def notify(cfg, title, message, priority=3, tags=None, click=None):
     try:
         r = httpx.post(cfg["ntfy"]["server"], json=payload, timeout=15)
         r.raise_for_status()
-        log.info("Notis skickad: %s", title)
+        log.info("ntfy-notis skickad: %s", title)
         return True
     except httpx.HTTPError as e:
         log.error("Kunde inte skicka notis (%s): %s", title, e)

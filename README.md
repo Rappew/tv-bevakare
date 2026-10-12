@@ -12,6 +12,14 @@ Bevakaren kollar var 5:e minut (± 20 sek) om **LG 65" C5 4K OLED evo TV (2025)*
 
 Öppna ntfy-appen, tryck **+** och prenumerera på ditt ämne (server: ntfy.sh). Ämnesnamnet står i `config.local.yaml` på Macen.
 
+## WhatsApp (via CallMeBot)
+
+Alla notiser skickas också som WhatsApp-meddelande till ditt nummer, om telefonnummer och CallMeBot-nyckel finns:
+- **i molnet:** som GitHub Secrets `CALLMEBOT_PHONE` (t.ex. `+46701234567`) och `CALLMEBOT_APIKEY`
+- **på Macen:** i `config.local.yaml` under `whatsapp:` med `phone:` och `apikey:`
+
+CallMeBot är en gratis, inofficiell tjänst. ntfy finns kvar som reserv.
+
 ## Molnet (GitHub Actions) – så körs den nu
 
 Bevakaren körs i GitHubs moln, så datorn kan vara avstängd. Den ligger i repot **https://github.com/Rappew/tv-bevakare**.
