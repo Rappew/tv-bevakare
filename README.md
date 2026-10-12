@@ -1,6 +1,6 @@
 # TV-bevakare: LG 65" C5 hos Elgiganten
 
-Bevakaren kollar var 3:e minut (± 20 sek) om **LG 65" C5 4K OLED evo TV (2025)** (varukod 912307) finns i lager i någon Elgiganten-butik i Stockholms län. Du får en push-notis på mobilen via **ntfy** när:
+Bevakaren kollar var 5:e minut (± 20 sek) om **LG 65" C5 4K OLED evo TV (2025)** (varukod 912307) finns i lager i någon Elgiganten-butik i Stockholms län. Du får en push-notis på mobilen via **ntfy** när:
 
 - en bevakad butik går från 0 till i lager (med butik, antal, pris och länk)
 - lagret i den butiken försvinner igen
@@ -12,7 +12,19 @@ Bevakaren kollar var 3:e minut (± 20 sek) om **LG 65" C5 4K OLED evo TV (2025)*
 
 Öppna ntfy-appen, tryck **+** och prenumerera på ämnet **`tv-bevakare-1f4f73c9`** (server: ntfy.sh).
 
-## Starta, stoppa, se loggen
+## Molnet (GitHub Actions) – så körs den nu
+
+Bevakaren körs i GitHubs moln, så datorn kan vara avstängd. Den ligger i repot **https://github.com/Rappew/tv-bevakare**.
+
+- En körning kontrollerar var 5:e minut i 5,5 timmar. Varje timme ställer GitHub en ny körning i kö, och den tar vid så fort den förra är klar. Det ger kontroller dygnet runt.
+- **Se att den kör:** öppna fliken **Actions** i repot (logga in). En gul snurra betyder att den kör. Klicka på körningen och sedan på steget **Bevaka lagret** för att se loggen. Körningar som står som "cancelled" är normala: de är köade dubbletter som ersatts av nyare.
+- **Stoppa:** Actions → **Lagerbevakare** → knappen **···** → **Disable workflow**. Den stänger också av sig själv efter 2026-10-18 23:59. Stäng gärna av den då ändå, så att den inte startar i onödan.
+- **Starta igen:** samma meny → **Enable workflow**, och sedan **Run workflow**.
+- ntfy-ämnet ligger som en dold hemlighet (Settings → Secrets → `NTFY_TOPIC`) och syns inte i koden.
+
+Kör **inte** bevakaren på Macen samtidigt, för då får du dubbla notiser.
+
+## Köra på Macen i stället (reserv)
 
 Öppna Terminal och gå till mappen:
 
@@ -27,7 +39,7 @@ cd ~/Projekt/tv-bevakare
 | **Se loggen live** (avsluta visningen med Ctrl+C) | `./logg.sh` |
 | **Se lagret just nu** (en kontroll, inga notiser) | `./status.sh` |
 
-Bevakaren fortsätter köra även om du stänger Terminal-fönstret. `start.sh` kör den med `caffeinate`, som hindrar Macen från att somna. **Obs:** om du stänger locket på en MacBook som går på batteri somnar den ändå. Låt den stå med laddaren i, eller låt locket vara öppet.
+`./status.sh` fungerar när som helst, även när molnet kör, eftersom den inte skickar några notiser. På Macen läses ntfy-ämnet från filen `config.local.yaml`, som inte laddas upp till GitHub. Om du stänger locket på en MacBook som går på batteri somnar den, även med `caffeinate`.
 
 Ett tips: stäng av "Pausa" (Do Not Disturb/Fokus) för ntfy-appen på mobilen, så att notisen faktiskt hörs.
 
@@ -35,7 +47,9 @@ Ett tips: stäng av "Pausa" (Do Not Disturb/Fokus) för ntfy-appen på mobilen, 
 
 | Fil | Vad den är |
 |---|---|
-| `config.yaml` | Inställningar: ntfy-ämne, butikslista, intervall, slutdatum. Ändra och starta om (`./stop.sh` och sedan `./start.sh`). |
+| `config.yaml` | Inställningar: butikslista, intervall, slutdatum. Ändringar som laddas upp till GitHub gäller från nästa molnkörning. |
+| `config.local.yaml` | Ditt ntfy-ämne, bara på Macen (laddas inte upp) |
+| `.github/workflows/bevakare.yml` | Schemat för GitHub-molnet |
 | `bevakare.py` | Själva programmet |
 | `bevakare.log` | Loggen: tid, status per butik och fel |
 | `state.json` | Kommer ihåg senaste lagerstatus, så att du bara får notis vid förändring |
@@ -56,18 +70,10 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-## Köra när datorn är avstängd (förslag, inte byggt)
+## Alternativ: egen molnserver
 
-**Alternativ 1: Billig molnserver (rekommenderas).** Hyr en minsta VPS, t.ex. Hetzner CX22 (cirka 4 €/mån, betalas per timme, alltså några kronor för en vecka) eller DigitalOcean (cirka 4–6 $/mån). Gör så här:
-1. Kopiera mappen dit med `scp`.
-2. Kör de tre installationsraderna ovan.
-3. Starta med `nohup .venv/bin/python bevakare.py &`, eller som en `systemd`-tjänst som startar om sig själv.
-
-`caffeinate` behövs inte där. Ta bort servern efter 18 oktober. Nackdel: Elgiganten kan behandla datacenter-IP-adresser strängare än hemma-IP. Fungerar det inte, säger bevakaren till via "blockerad"-notisen.
-
-**Alternativ 2: GitHub Actions.** Lägg koden i ett (privat) GitHub-repo och skapa ett schemalagt arbetsflöde (`schedule: cron: "*/5 * * * *"`) som kör `bevakare.py --once`-liknande logik. `state.json` får då sparas mellan körningarna, t.ex. genom att committa den eller med `actions/cache`. Nackdelar:
-- 5 minuter är kortaste intervallet.
-- GitHub försenar ofta schemalagda körningar med 5–15 minuter eller hoppar över dem vid hög belastning.
-- Privata repon har en gräns på gratisminuter.
-
-Det duger, men är mindre pålitligt än en server.
+Om GitHub skulle börja blockeras eller bli opålitligt kan bevakaren köras på en liten VPS, t.ex. Hetzner CX22 (cirka 4 €/mån, betalas per timme). Gör så här:
+1. Kopiera mappen dit.
+2. Skapa `config.local.yaml` med ntfy-ämnet.
+3. Installera enligt ovan.
+4. Kör `nohup .venv/bin/python bevakare.py &`.
