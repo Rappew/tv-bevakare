@@ -7,6 +7,10 @@ on:
   schedule:
     - cron: "7 * * * *"
   workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Hur många minuter körningen ska bevaka (kort värde = test)"
+        default: "330"
 
 concurrency:
   group: bevakare
@@ -34,7 +38,7 @@ jobs:
           restore-keys: state-
 
       - name: Bevaka lagret
-        run: python bevakare.py --max-minutes 330 --quiet-start
+        run: python bevakare.py --max-minutes ${{ inputs.minutes || 330 }} --quiet-start
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
 
